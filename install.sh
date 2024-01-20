@@ -1,69 +1,51 @@
 #!/bin/bash
 #made in vim
 
-RED='\033[1;31m'
-BLUE='\033[1;34m'
-PURPLE='\033[1;35m'
-YELLOW='\033[1;33m'
-GREEN='\033[1;33'
-ORANGE='\033[0;33'
-NC='\033[0m'
+sudo pacman -Syu --noconfirm
+sudo pacman -S git base-devel --noconfirm
 
-echo -e -n "${PURPLE}have you enabled multilib yet?[Y/n]: ${NC}"
-read answer
-if [ "$answer" = 'n' ];
-then
-	echo -e "${RED}enable multilib and then run this script again${NC}"
-	exit
-fi
-
-echo -e "${BLUE}updating packages and repos${NC}"
-sudo pacman -Syu
-
-echo -e  "${BLUE}installing some basic packages ${PURPLE}"
-sudo pacman -S firefox code bashtop zip unrar vlc neofetch lolcat latte-dock mysql-workbench zsh wget openssh git php pulseaudio-bluetooth bluez bluez-utils blueman discord thunderbird libreoffice-fresh vivaldi kvantum --needed --noconfirm
-
-sudo pacman -R kmix
-echo -e "${NC}"
-sudo systemctl enable --now bluetooth
-
-
-echo -e "${BLUE}installing code extensions${YELLOW}"
-code --install-extension coenraads.bracket-pair-colorizer-2
-code --install-extension equinusocio.vsc-community-material-theme
-code --install-extension pranaygp.vscode-css-peek
-code --install-extension dsznajder.es7-react-js-snippets
-code --install-extension abusaidm.html-snippets
-code --install-extension qufiwefefwoyn.inline-sql-syntax
-code --install-extension onecentlin.laravel-blade
-code --install-extension shufo.vscode-blade-formatter
-code --install-extension amiralizadeh9480.laravel-extra-intellisense
-code --install-extension codingyu.laravel-goto-view
-code --install-extension mohamedbenhida.laravel-intellisense
-code --install-extension onecentlin.laravel5-snippets
-code --install-extension yandeu.five-server
-code --install-extension magicstack.magicpython
-code --install-extension pkief.material-icon-theme
-code --install-extension bmewburn.vscode-intelephense-client
-code --install-extension esbenp.prettier-vscode
-code --install-extension tomi.xasnippets
-code --install-extension msjsdiag.vscode-react-native
-code --install-extension bradlc.vscode-tailwindcss
-code --install-extension robole.snippets-ranger
-
-echo "setting zsh as default shell"
-#changing shell to zsh
-chsh -s /bin/zsh
-
-echo -e "${BLUE}installing ohmyzsh${NC}"
-sudo sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-echo -e "${BLUE}installing yay${NC}"
-sudo git clone https://aur.archlinux.org/yay.git
-sudo chown 777 yay/
-cd yay/
+git clone https://aur.archlinux.org/paru.git
+chmod 777 paru/
+cd paru/
 makepkg -si --noconfirm
 
+#You will need to create a free account
+#https://my.nextdns.io/signup
+sh -c "$(curl -sL https://nextdns.io/install)"
+nextdns start
+
+paru -S firefox firefox-developer-edition firefox-nightly-bin --noconfirm
+
+#Firefox stable will be used as daily default hardenend browser
+#Firefox dev will be strictly hardenend for sensitive tasks
+#Firefox nightly will not be hardenend 
+
+sudo cp /etc/pacman.conf /etc/pacman.conf.backup
+mline=$(grep -n "\\[multilib\\]" /etc/pacman.conf | cut -d: -f1)
+rline=$(($mline + 1))
+sudo sed -i ''$mline's|#\[multilib\]|\[multilib\]|g' /etc/pacman.conf
+sudo sed -i ''$rline's|#Include = /etc/pacman.d/mirrorlist|Include = /etc/pacman.d/mirrorlist|g' /etc/pacman.conf
+
+sudo cp /etc/paru.conf /etc/paru.conf.backup
+mline=$(grep -n "\\[BottomUp\\]" /etc/paru.conf | cut -d: -f1)
+rline=$(($mline + 1))
+sudo sed -i ''$mline's|#\[BottomUp\]|\[BottomUp\]|g' /etc/paru.conf
+sudo sed -i ''$rline's|#RemoveMake|SkipView' /etc/paru.conf
+paru -Sy
+
+paru -S atom-editor-beta-bin bleachbit calibre deja-dup electrum element-desktop balena-etcher freefilesync-bin gimp handbrake keepassxc mailspring newsflash onlyoffice-bin protonmail-bridge-nokeychain protonvpn signal-desktop standardnotes-bin torbrowser-launcher transmission-qt veracrypt virtualbox-host-modules-arch virtualbox vlc wire-desktop telegram-desktop discord_arch_electron spotify code unrar zip zsh --noconfirm
+sudo modprobe vboxdrv
+sudo pacman -R kmix --noconfirm
+
+sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+sudo cp ~/.zshrc ~/.zshrc.backup
+sudo mv ~/ArchSetupScript/.zshrc ~/.zshrc
+
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+source ~/.zshrc
+
+timedatectl set-timezone Europe/Amsterdam
 cd ..
 rm -rf /yay-git
 
